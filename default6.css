@@ -1,0 +1,14 @@
+
+body{
+margin: 0;
+}
+
+
+div#box1{
+background: silver;
+margin: 10px 20px 30px;
+}
+
+div#box2{
+background: orange;
+}

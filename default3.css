@@ -1,0 +1,22 @@
+/*p:first-line{
+color: skyblue;
+}*/
+
+/*p:first-letter{
+color: skyblue;
+}*/
+
+
+p:before{
+content: "-->";
+}
+
+
+p:after{
+content: "<--";
+}
+
+
+
+
+/*‹[——v‘f*/

@@ -1,0 +1,20 @@
+/*
+border~
+
+border-color: 色
+border-width: 幅
+border-style: 線のスタイル
+
+*/
+
+
+/*div{
+border-color: orange;
+border-width: 4px;
+border-style: dotted;
+}*/
+
+/*省略↓*/
+div{
+border: orange 4px dotted;
+}

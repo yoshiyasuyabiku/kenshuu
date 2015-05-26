@@ -1,0 +1,50 @@
+/*
+z-index
+position:static以外の要素
+値が大きい程上にくる
+*/
+
+/*
+overflow  値がその要素をはみ出しでの表示になるときの設定
+
+visible
+hidden
+scroll
+
+*/
+
+
+
+
+body{
+margin: 0;
+}
+
+
+#box1,#box2,#box3{
+width: 100px;
+height: 50px;
+position: absolute;
+z-index: 3;
+}
+
+#box1{
+background: gray;
+top: 10px;
+left: 10px;
+overflow: scroll;
+}
+
+#box2{
+background: orange;
+top: 20px;
+left: 20px;
+z-index: 1;
+}
+
+#box3{
+background: blue;
+top: 30px;
+left: 30px;
+z-index: 2;
+}

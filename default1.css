@@ -1,0 +1,13 @@
+
+
+/*a[title]{
+color: skyblue;
+}*/
+
+/*a[href="http://google.com"]{
+color: orange;
+}*/
+
+a[class~="search"]{
+color: violet;
+}
