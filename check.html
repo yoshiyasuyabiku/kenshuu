@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<title>初めてのHTML</title>
+</head>
+<body>
+<article>
+<h1>アンケート</h1>
+<form action="survey.php" method="post">
+<p>メールアドレス:<input type="text" name="email"></p>
+<p>Phone:
+<label><input type="checkbox" name="phone" value="android">andorid</label>
+<input type="checkbox" name="phone" value="iPhone" id="iphone"><label for="iphone">iphone</label>
+</p>
+<p>
+color:
+<input type="radio" name="color" value="red">red
+<input type="radio" name="color" value="blue">blue
+</p>
+<p><input type="submit" value="送信?"></p>
+</from>
+</article>
+</body>
+</html>
