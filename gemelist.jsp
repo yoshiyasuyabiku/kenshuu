@@ -1,20 +1,21 @@
 <%@page import="jp.co.tafs.kenshu.game.GameSearchConditionBean"%>
+<%@page import="jp.co.tafs.kenshu.game.GameBean" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <%@ page language="java" import="jp.co.tafs.kenshu.*" %>
 <%@ page language="java" import="java.util.*" %>
 
-<%/* ����<jsp:useBean ...>�̍s�́A
+<%/* 下の<jsp:useBean ...>の行は、
      GameSearchConditionBean conditionBean = request.getAttribute("conditionBean");
      ArrayList gameList = (ArrayList)request.getAttribute("gameList");
-   �Ɠ����ł��B*/%>
+   と同じです。*/%>
 <jsp:useBean id="conditionBean" scope="request" class="jp.co.tafs.kenshu.game.GameSearchConditionBean" />
 <jsp:useBean id="gameList" scope="request" class="java.util.ArrayList" />
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-		<title>�Q�[���Ǘ��V�X�e��</title>
+		<title>ゲーム管理システム</title>
 		<style type=text/css>
 			#searchForm{
 				background-color:lightblue;
@@ -44,122 +45,126 @@
 	<body>
 	<script>
 	function kakunin(){
-		ret = confirm("�����𑱍s���܂����H");
+		ret = confirm("処理を続行しますか？");
 		if(ret == true){
 			location.href = "http://www.yahoo.co.jp/";
 		}
 	}
 	</script>
 	
-		<h1>�Q�[���Ǘ��V�X�e��</h1>
+		<h1>ゲーム管理システム</h1>
 		
 		<%/*
-		 <form>�̒��ɁA<input>��<select>���A�f�[�^����͂��邽�߂̃R���g���[����u���܂��B
-		 form��submit����ƁA �����̃R���g���[���ɓ��͂����l���A�T�[�o�[�Ƀp�����[�^�Ƃ��đ��M����܂��B
-		 ���M�̕��@(method)�ɂ́Apost��get������܂��B�i���ɂ�����܂����A�悭�g���̂͂���2��ށj
-		 post��form�𑗐M����ƁAServlet��doPost(request,response)���Ă΂�Aget��form�𑗐M����ƁAdoGet(request,response)���Ă΂�܂��B
-		 post�́A���M�����p�����[�^�̓��e�͌����܂���Bget�́AURL�̌��Ƀp�����[�^��������`�ł������ĕ\������܂��B
-		 �u���E�U��URL�\�����ŁA?������΁A����?�ȍ~���p�����[�^�ł��B
-		���Ƃ��΁A
+		 <form>の中に、<input>や<select>等、データを入力するためのコントロールを置きます。
+		 formをsubmitすると、 これらのコントロールに入力した値が、サーバーにパラメータとして送信されます。
+		 送信の方法(method)には、postとgetがあります。（他にもありますが、よく使うのはこの2種類）
+		 postでformを送信すると、ServletのdoPost(request,response)が呼ばれ、getでformを送信すると、doGet(request,response)が呼ばれます。
+		 postは、送信したパラメータの内容は見えません。getは、URLの後ろにパラメータが見える形でくっついて表示されます。
+		 ブラウザのURL表示欄で、?があれば、その?以降がパラメータです。
+		たとえば、
 		<form method="get" action="mypage">
 		<input type="text" name="hoge1" value="fuga1">
 		<input type="text" name="hoge2" value="fuga2">
 		<input type="hidden" name="hoge3" value="fuga3">
 		</form>
-		�Ƃ����t�H�[����submit����ƁA�T�u�~�b�g��́A
+		というフォームをsubmitすると、サブミット先は、
 		 http://tafs.co.jp/app/mypage?hoge1=fuga1&hoge2=fuga2&hoge3=fuga3
-		 �ƂȂ�܂��Bpost�̏ꍇ��?�ȍ~�͌����܂���B�����ĂȂ��Ă��A���M�͂���܂��B
-		�u���E�U��URL���͗���URL����͂��āAEnter�L�[���������ꍇ��get�ł̌Ăяo���ł��B
+		 となります。postの場合は?以降は見えません。見えてなくても、送信はされます。
+		ブラウザのURL入力欄にURLを入力して、Enterキーを押した場合もgetでの呼び出しです。
 		
 		*/%>	
 		<form id="searchForm" method="post" action="">
-			<h3>��������</h3>
-			<p><span>�Q�[���^�C�g��:</span><input type="text" name="gameTitle" value="<%=conditionBean.getGameTitle()  %>"></p>
-			<p><span>�n�[�h�E�F�A:</span><input type="text" name="hardware" value="<%=conditionBean.getHardware()  %>">
-			<input type="submit" value="�V�K">
-			<input type="submit" value="����" onClick="kakunin()"></p>
+			<h3>検索条件</h3>
+			<p><span>ゲームタイトル:</span><input type="text" name="gameTitle" value="<%=conditionBean.getGameTitle()  %>"></p>
+			<p><span>ハードウェア:</span><input type="text" name="hardware" value="<%=conditionBean.getHardware()  %>">
+			<input type="submit" value="新規">
+			<input type="submit" value="検索" onClick="kakunin()"></p>
 		</form>
 		<p><%=request.getAttribute("message")%></p>
 		
 		<p><%=request.getAttribute("error")%></p>
 		
-		<p><%=request.getAttribute("List<GameBean>.gameList")%></p>
+		
 		<hr>
 		<table class="float-left">
-			<caption>�Q�[���}�X�^�ꗗ</caption>
+			<caption>ゲームマスタ一覧</caption>
 			<tr>
-				<th>No</th><th>�Q�[���^�C�g��</th><th>�n�[�h�E�F�A</th>
+				<th>No</th><th>ゲームタイトル</th><th>ハードウェア</th>
 				
 			</tr>
-			<%for(int i = 0 ; i < gameList.size();i++){ %> 
+			<%List<GameBean> a = new ArrayList<GameBean>(); %>
+			  <%for(int i = 0 ; i < gameList.size();i++){%> 
+		
+		
 			<%
 			/*
-			  * ������gameList����AServlet�œ��ꂽGameBean���ǂ�����Ēl���Ƃ��Ă��邩���A�ۑ�1�̎R��ł��B
-			  * gameList�̌^�́AList�ł��B
+			  * ここでgameListから、Servletで入れたGameBeanをどうやって値をとってくるかが、課題1の山場です。
+			  * gameListの型は、Listです。
 			  * http://docs.oracle.com/javase/jp/6/api/java/util/List.html
 			  * http://docs.oracle.com/javase/jp/6/api/java/util/ArrayList.html
-			  * ���̕ӂ����āA�Ȃ�Ƃ�GameBean�����o���Ă݂Ă��������B
+			  * この辺を見て、なんとかGameBeanを取り出してみてください。
 			  *
 			  */
+				a.add((GameBean)gameList.get(i));
 			%>
 			
 				<tr>
-					<td>TODO �A�Ԃŕ\��</td>
-					<td>TODO �����Ƀ^�C�g����\��</td>
-					<td>TODO �����Ƀn�[�h�E�F�A��\��</td>
+					<td>TODO 連番で表示</td>
+					<td>TODO ここにタイトルを表示<%=a.get(i) %></td>
+					<td>TODO ここにハードウェアを表示</td>
 				</tr>
 			<%} %>
 		</table>
 		<div class="float-left" style="width:500px;margin-top:50px;margin-left:50px">
-			�ۑ�P
+			課題１
 			<ol>
-			<li>html��css����g���āA��ʃf�U�C�����������悭���܂��B<br>
-			�����������f�U�C�����v�����Ȃ��l�́AWeb�V�X�e���d�l�����Q�l�ɂ��Ă��������B</li>
-			<li>�n�߂̉�ʕ\���ŁA�unull�v�Ƃ����������\������Ȃ��悤�ɂ��܂��B</li>
-			<li>�������J�n����O�ɁA�N���C�A���g����JavaScript�ŏ����𑱍s���邩�ǂ����̊m�F���b�Z�[�W��\�����܂��B
-			<br>�L�����Z�������ꍇ�͌������s������߂܂��B</li>
-			<li>DB�̌��C�ۑ�ō�����Q�[���}�X�^�̏�����ʉ����̈ꗗ�ɕ\�����܂��B</li>
+			<li>htmlとcssを駆使して、画面デザインをかっこよくします。<br>
+			かっこいいデザインが思いつかない人は、Webシステム仕様書を参考にしてください。</li>
+			<li>始めの画面表示で、「null」という文字が表示されないようにします。</li>
+			<li>検索を開始する前に、クライアント側のJavaScriptで処理を続行するかどうかの確認メッセージを表示します。
+			<br>キャンセルした場合は検索実行を取りやめます。</li>
+			<li>DBの研修課題で作ったゲームマスタの情報を画面下部の一覧に表示します。</li>
 			</ol>
 
-			�ۑ�Q
+			課題２
 			<ol>
-			<li>���������ɓ��͂������e�ŁASQL�̌��������𑝂₵�āA�������ʂɔ��f�����܂��B</li>
-			<li>�������J�n����O��JavaScript�œ��͂��`�F�b�N���܂��B<br>
+			<li>検索条件に入力した内容で、SQLの検索条件を増やして、検索結果に反映させます。</li>
+			<li>検索を開始する前にJavaScriptで入力をチェックします。<br>
 				<ul>
-					<li>�Q�[���^�C�g���ɒl�����͂���Ă��Ȃ��ꍇ�ɃG���[���b�Z�[�W�\��</li>
-					<li>�n�[�h�E�F�A�ɒl�����͂���Ă��Ȃ��ꍇ�ɃG���[���b�Z�[�W�\��</li>
+					<li>ゲームタイトルに値が入力されていない場合にエラーメッセージ表示</li>
+					<li>ハードウェアに値が入力されていない場合にエラーメッセージ表示</li>
 				</ul>
 			</li>
 			</ol>
 
-			�ۑ�R
+			課題３
 			<ol>
-			<li>�Q�[���}�X�^�ꗗ�̌������ʌ�������ʂɕ\�����܂��B<br>
-			�������A�����́Aselect count(*) from ...���g����DB����擾���Ă��������B
+			<li>ゲームマスタ一覧の検索結果件数を画面に表示します。<br>
+			ただし、件数は、select count(*) from ...を使ってDBから取得してください。
 			</li>
-			<li>�Q�[���}�X�^�ꗗ�ɁA�L�����N�^����\����������ǉ����Ă��������B</li>
+			<li>ゲームマスタ一覧に、キャラクタ数を表示する列をを追加してください。</li>
 			</ol>
 
-			�ۑ�S
+			課題４
 			<ol>
-			<li>�e�Q�[���}�X�^�ꗗ�̍ŏI��ɁA�폜�{�^����ǉ����܂��B<br>
-				�폜�{�^���������ƁA�Q�[���}�X�^�̊Y�����R�[�h���폜���܂��B
+			<li>各ゲームマスタ一覧の最終列に、削除ボタンを追加します。<br>
+				削除ボタンを押すと、ゲームマスタの該当レコードを削除します。
 				<ul>
-					<li>html��ҏW���A�폜�{�^����ǉ�</li>
-					<li>GameDeleteServlet�̒ǉ�<li>
-					<li>web.xml��servlet��o�^</li>
-					<li>�폜�{�^�����N���b�N����ƁAGameDeleteServlet�Ƀ��N�G�X�g�𑗐M����B</li>
-					<li>GameDeleteServlet��DB�̃��R�[�h����������</li>
-					<li>�ꗗ��ʂ��ĕ\�����A���b�Z�[�W�u{�Q�[���^�C�g��}���폜���܂����B�v��\�����܂��B<br>
-					�i{�Q�[���^�C�g��}�͍폜�����Q�[���^�C�g�����j
+					<li>htmlを編集し、削除ボタンを追加</li>
+					<li>GameDeleteServletの追加<li>
+					<li>web.xmlにservletを登録</li>
+					<li>削除ボタンをクリックすると、GameDeleteServletにリクエストを送信する。</li>
+					<li>GameDeleteServletでDBのレコード処理を実装</li>
+					<li>一覧画面を再表示し、メッセージ「{ゲームタイトル}を削除しました。」を表示します。<br>
+					（{ゲームタイトル}は削除したゲームタイトル名）
 				</ul>
 			</li>
 			</ol>
 			
-			�ۑ�T
+			課題５
 			<ol>
-			<li>�e���Ŏ��R�ɃA�����W�������Ă݂܂��傤�B</li>
-			<li>Web�V�X�e���d�l�����Q�l�ɁA�V�K�o�^�E�ҏW��ʂɂ����킵�Ă݂܂��傤�B</li>
+			<li>各自で自由にアレンジを加えてみましょう。</li>
+			<li>Webシステム仕様書を参考に、新規登録・編集画面にも挑戦してみましょう。</li>
 			</ol>
 			
 			
