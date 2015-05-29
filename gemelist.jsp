@@ -1,5 +1,6 @@
 <%@page import="jp.co.tafs.kenshu.game.GameSearchConditionBean"%>
 <%@page import="jp.co.tafs.kenshu.game.GameBean" %>
+
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <!DOCTYPE html>
@@ -12,6 +13,7 @@
    と同じです。*/%>
 <jsp:useBean id="conditionBean" scope="request" class="jp.co.tafs.kenshu.game.GameSearchConditionBean" />
 <jsp:useBean id="gameList" scope="request" class="java.util.ArrayList" />
+
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -45,6 +47,7 @@
 	<body>
 	<script>
 	function kakunin(){
+		
 		ret = confirm("処理を続行しますか？");
 		if(ret == true){
 			location.href = "http://www.yahoo.co.jp/";
@@ -105,13 +108,19 @@
 			  * この辺を見て、なんとかGameBeanを取り出してみてください。
 			  *
 			  */
-				a.add((GameBean)gameList.get(i));
+				//a.add((GameBean)gameList.get(i));   //変更前
+				// a.get(i).getGameId()   //ここから3つが変更前の下記の処理
+				//a.get(i).getGameTitle() 
+				//a.get(i).getHardWare()
+				GameBean b = (GameBean)gameList.get(i);  //変更後
 			%>
 			
-				<tr>
-					<td>TODO 連番で表示</td>
-					<td>TODO ここにタイトルを表示<%=a.get(i) %></td>
-					<td>TODO ここにハードウェアを表示</td>
+			 	<tr>
+					<td><%=b.getGameId() %></td>       
+					<td><%=b.getGameTitle() %></td>
+					<td><%=b.getHardWare() %></td>
+
+
 				</tr>
 			<%} %>
 		</table>
