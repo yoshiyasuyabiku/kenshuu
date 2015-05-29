@@ -1,168 +1,278 @@
-<%@page import="jp.co.tafs.kenshu.game.GameSearchConditionBean"%>
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-    pageEncoding="UTF-8"%>
-<!DOCTYPE html>
-<%@ page language="java" import="jp.co.tafs.kenshu.*" %>
-<%@ page language="java" import="java.util.*" %>
+package jp.co.tafs.kenshu;
 
-<%/* ‰º‚Ì<jsp:useBean ...>‚Ìs‚ÍA
-     GameSearchConditionBean conditionBean = request.getAttribute("conditionBean");
-     ArrayList gameList = (ArrayList)request.getAttribute("gameList");
-   ‚Æ“¯‚¶‚Å‚·B*/%>
-<jsp:useBean id="conditionBean" scope="request" class="jp.co.tafs.kenshu.game.GameSearchConditionBean" />
-<jsp:useBean id="gameList" scope="request" class="java.util.ArrayList" />
-<html>
-	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-		<title>ƒQ[ƒ€ŠÇ—ƒVƒXƒeƒ€</title>
-		<style type=text/css>
-			#searchForm{
-				background-color:lightblue;
-			}
-			tr th {
-				background-color:gray;
-				color:white;
-				font-weight:bold;
-			}
-			tr td {
-				background-color:white;
-				color:green;
-			}
-			table,th,td {
-				border:solid thin;
-			}
-			.float-left {
-				float:left;
-			}
-			span{
-				display: inline-block;
-				width: 7em;
-			}
-			
-		</style>
-	</head>
-	<body>
-	<script>
-	function kakunin(){
-		ret = confirm("ˆ—‚ğ‘±s‚µ‚Ü‚·‚©H");
-		if(ret == true){
-			location.href = "http://www.yahoo.co.jp/";
-		}
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import jp.co.tafs.kenshu.game.GameBean;
+import jp.co.tafs.kenshu.game.GameSearchConditionBean;
+import jp.co.tafs.kenshu.util.DBConnectInfo;
+
+/**
+ * ç ”ä¿®ã§ä½¿ç”¨ã™ã‚‹ã€ã‚²ãƒ¼ãƒ ã‚½ãƒ•ãƒˆç®¡ç†ã‚·ã‚¹ãƒ†ãƒ ã®ä¸€è¦§ç”»é¢ã®æ“ä½œã‚’å‡¦ç†ã™ã‚‹ãŸã‚ã®ã‚µãƒ¼ãƒ–ãƒ¬ãƒƒãƒˆã‚¯ãƒ©ã‚¹ã§ã™ã€‚
+ * 
+ * ã‚µãƒ¼ãƒ–ãƒ¬ãƒƒãƒˆã¨ã¯ã€ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã‹ã‚‰é€ã‚‰ã‚ŒãŸæƒ…å ±ã‚’å‡¦ç†ã™ã‚‹ãŸã‚ã®ã‚µãƒ¼ãƒãƒ¼å´ã®Javaãƒ—ãƒ­ã‚°ãƒ©ãƒ ã‚’è¨˜è¿°ã™ã‚‹
+ * ãŸã‚ã®ã‚¯ãƒ©ã‚¹ãƒ•ã‚¡ã‚¤ãƒ«ã§ã™ã€‚
+ * 
+ * ã‚µãƒ¼ãƒ–ãƒ¬ãƒƒãƒˆã‚¯ãƒ©ã‚¹ã‚’ä½œã‚‹ã«ã¯ã€ã‚¯ãƒ©ã‚¹ã‚’HttpServletã‚’ç¶™æ‰¿ã™ã‚‹ã“ã¨ãŒç´„æŸã«ãªã£ã¦ã„ã¾ã™ã€‚
+ * 
+ * ã‚µãƒ¼ãƒ–ãƒ¬ãƒƒãƒˆã‚’ã€tomcatã«ä»£è¡¨ã•ã‚Œã‚‹ã€ã‚µãƒ¼ãƒ–ãƒ¬ãƒƒãƒˆã‚³ãƒ³ãƒ†ãƒŠã¨å‘¼ã°ã‚Œã‚‹ã‚µãƒ¼ãƒãƒ¼ã‚½ãƒ•ãƒˆã‚¦ã‚§ã‚¢ã«ç™»éŒ²ã™ã‚‹ã“ã¨ã§ã€
+ * ã‚µãƒ¼ãƒ–ãƒ¬ãƒƒãƒˆã‚³ãƒ³ãƒ†ãƒŠãŒã€URLã§ã®è¦æ±‚ã«å¿œç­”ã™ã‚‹ãŸã‚ã«å¿…è¦ãªã‚µãƒ¼ãƒ–ãƒ¬ãƒƒãƒˆã‚¯ãƒ©ã‚¹ã‚’åˆ¤æ–­ã—ã¦å‘¼ã³å‡ºã—ã¦ãã‚Œã¾ã™ã€‚</p>
+ * 
+ * ã‚µãƒ¼ãƒ–ãƒ¬ãƒƒãƒˆã‚³ãƒ³ãƒ†ãƒŠã¯ã€ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã‚µãƒ¼ãƒãƒ¼ã®1ç¨®ã§ã™ã€‚
+ * 
+ * @author kawachi
+ *
+ */
+public class GameListServlet extends HttpServlet {
+
+	/**
+	 * ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã‹ã‚‰ã®è¦æ±‚ã®å›æ•°ã‚’ã‚«ã‚¦ãƒ³ãƒˆã™ã‚‹ãŸã‚ã®å¤‰æ•°ã§ã™ã€‚
+	 * ãƒ¡ã‚½ãƒƒãƒ‰ã®å¤–å´ã§å®£è¨€ã—ãŸå¤‰æ•°ã®å€¤ã¯ã€ã‚µãƒ¼ãƒãƒ¼ã‚’å†èµ·å‹•ã™ã‚‹ã¾ã§æ¶ˆãˆã¾ã›ã‚“ã€‚
+	 * ã¾ãŸã€ã‚µãƒ¼ãƒ–ãƒ¬ãƒƒãƒˆã§ã€ã“ã®ã‚ˆã†ã«ãƒ¡ã‚½ãƒƒãƒ‰ã®å¤–å´ã§å®£è¨€ã—ãŸå¤‰æ•°ã‚’ä½¿ã†å ´åˆã«ã¯ã€
+	 * ã™ã¹ã¦ã®ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã‚’ã¾ãŸã„ã§ã€å€¤ãŒå…±æœ‰ã•ã‚Œã‚‹ã®ã§ã€æ³¨æ„ãŒå¿…è¦ã§ã™ã€‚
+	 * Aã•ã‚“ã®ãƒ‘ã‚½ã‚³ãƒ³ã¨Bã•ã‚“ã®ãƒ‘ã‚½ã‚³ãƒ³ã§ã€ã“ã®ã‚µãƒ¼ãƒ–ãƒ¬ãƒƒãƒˆã‚’å‘¼ã³å‡ºã—ãŸã¨ãã«ã€
+	 * äºŒäººã¨ã‚‚åŒã˜å¤‰æ•°ã‚’å‚ç…§ã™ã‚‹ã“ã¨ã«ãªã‚Šã¾ã™ã€‚</p>
+	 * 
+	 * ä¾‹ï¼‰
+	 * <ol>
+	 * <li>Aã•ã‚“ã®ã‚¢ã‚¯ã‚»ã‚¹1å›ç›® count = 1</li>
+	 * <li>Aã•ã‚“ã®ã‚¢ã‚¯ã‚»ã‚¹2å›ç›® count = 2</li>
+	 * <li>Bã•ã‚“ã®ã‚¢ã‚¯ã‚»ã‚¹1å›ç›® count = 3</li>
+	 * <li>Cã•ã‚“ã®ã‚¢ã‚¯ã‚»ã‚¹1å›ç›® count = 4</li>
+	 * <li>Aã•ã‚“ã®ã‚¢ã‚¯ã‚»ã‚¹3å›ç›® count = 5</li>
+	 * </ol>
+	 * 
+	 * ãã®ãŸã‚ã€ãƒ¡ã‚½ãƒƒãƒ‰ã®å¤–å´ã§å®£è¨€ã—ãŸå¤‰æ•°ã«å„ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã®æƒ…å ±ã‚’ä»£å…¥ã—ã¦ç”»é¢ã«è¡¨ç¤ºã™ã‚‹ã‚ˆã†ãª
+	 * ä½¿ã„æ–¹ã‚’ã™ã‚‹ã¨ã€ã‚¿ã‚¤ãƒŸãƒ³ã‚°ã«ã‚ˆã£ã¦ã¯ã€å¤‰æ•°ã«å€¤ã‚’ã‚»ãƒƒãƒˆã—ãŸã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã¯ã€
+	 * åˆ¥ã®ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã®ç”»é¢ã«ã€ã‚»ãƒƒãƒˆã—ãŸæƒ…å ±ãŒè¦‹ãˆã¦ã—ã¾ã†ã“ã¨ãŒã‚ã‚Šã€
+	 * ã‚»ã‚­ãƒ¥ãƒªãƒ†ã‚£ä¸Šã®å•é¡Œã«ãªã‚‹ã“ã¨ãŒã‚ã‚Šã¾ã™ã€‚</p>
+	 * 
+	 * ãƒ¡ã‚½ãƒƒãƒ‰ã®å†…å´ã§å®£è¨€ã—ãŸå¤‰æ•°ã¯ã€ã“ã®ã‚ˆã†ãªå¿ƒé…ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚
+	 * 
+	 */
+	int count = 0;
+
+	/**
+	 * ãƒ–ãƒ©ã‚¦ã‚¶ã§URLã‚’å…¥åŠ›ã™ã‚‹ã¨å‘¼ã³å‡ºã•ã‚Œã‚‹ãƒ¡ã‚½ãƒƒãƒ‰ã§ã™ã€‚
+	 * 
+	 * @param request ç”»é¢ã‹ã‚‰ã®è¦æ±‚å†…å®¹ã‚’å«ã‚€ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§ã™ã€‚
+	 * @param response ç”»é¢ã¸ã®å¿œç­”å†…å®¹ã‚’å«ã‚€ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§ã™ã€‚
+	 * 
+	 * @see javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+	 */
+	@Override
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+		GameSearchConditionBean conditionBean = new GameSearchConditionBean();
+		request.setAttribute("conditionBean", conditionBean);
+
+		// jspãƒ•ã‚¡ã‚¤ãƒ«ã¸å‡¦ç†ã‚’è»¢é€ã—ã¾ã™ã€‚
+		// jspã¨ã¯ã€javaã§htmlã‚’çµ„ã¿ç«‹ã¦ã‚‹ãƒ—ãƒ­ã‚°ãƒ©ãƒ ã®ä»•çµ„ã¿ã§ã™ã€‚
+		// ã‚µãƒ¼ãƒãƒ¼ä¸Šã§ã€jspã®ãƒ—ãƒ­ã‚°ãƒ©ãƒ ã®è¨˜è¿°å†…å®¹ã«å¾“ã£ã¦ã€htmlã‚’çµ„ã¿ç«‹ã¦ã¦ã€
+		// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã®ã‚¦ã‚§ãƒ–ãƒ–ãƒ©ã‚¦ã‚¶ã«é€ä¿¡ã—ã¾ã™ã€‚
+		getServletConfig().getServletContext().getRequestDispatcher("/WEB-INF/jsp/gemelist.jsp")
+				.forward(request, response);
 	}
-	</script>
 	
-		<h1>ƒQ[ƒ€ŠÇ—ƒVƒXƒeƒ€</h1>
-		
-		<%/*
-		 <form>‚Ì’†‚ÉA<input>‚â<select>“™Aƒf[ƒ^‚ğ“ü—Í‚·‚é‚½‚ß‚ÌƒRƒ“ƒgƒ[ƒ‹‚ğ’u‚«‚Ü‚·B
-		 form‚ğsubmit‚·‚é‚ÆA ‚±‚ê‚ç‚ÌƒRƒ“ƒgƒ[ƒ‹‚É“ü—Í‚µ‚½’l‚ªAƒT[ƒo[‚Éƒpƒ‰ƒ[ƒ^‚Æ‚µ‚Ä‘—M‚³‚ê‚Ü‚·B
-		 ‘—M‚Ì•û–@(method)‚É‚ÍApost‚Æget‚ª‚ ‚è‚Ü‚·Bi‘¼‚É‚à‚ ‚è‚Ü‚·‚ªA‚æ‚­g‚¤‚Ì‚Í‚±‚Ì2í—Şj
-		 post‚Åform‚ğ‘—M‚·‚é‚ÆAServlet‚ÌdoPost(request,response)‚ªŒÄ‚Î‚êAget‚Åform‚ğ‘—M‚·‚é‚ÆAdoGet(request,response)‚ªŒÄ‚Î‚ê‚Ü‚·B
-		 post‚ÍA‘—M‚µ‚½ƒpƒ‰ƒ[ƒ^‚Ì“à—e‚ÍŒ©‚¦‚Ü‚¹‚ñBget‚ÍAURL‚ÌŒã‚ë‚Éƒpƒ‰ƒ[ƒ^‚ªŒ©‚¦‚éŒ`‚Å‚­‚Á‚Â‚¢‚Ä•\¦‚³‚ê‚Ü‚·B
-		 ƒuƒ‰ƒEƒU‚ÌURL•\¦—“‚ÅA?‚ª‚ ‚ê‚ÎA‚»‚Ì?ˆÈ~‚ªƒpƒ‰ƒ[ƒ^‚Å‚·B
-		‚½‚Æ‚¦‚ÎA
-		<form method="get" action="mypage">
-		<input type="text" name="hoge1" value="fuga1">
-		<input type="text" name="hoge2" value="fuga2">
-		<input type="hidden" name="hoge3" value="fuga3">
-		</form>
-		‚Æ‚¢‚¤ƒtƒH[ƒ€‚ğsubmit‚·‚é‚ÆAƒTƒuƒ~ƒbƒgæ‚ÍA
-		 http://tafs.co.jp/app/mypage?hoge1=fuga1&hoge2=fuga2&hoge3=fuga3
-		 ‚Æ‚È‚è‚Ü‚·Bpost‚Ìê‡‚Í?ˆÈ~‚ÍŒ©‚¦‚Ü‚¹‚ñBŒ©‚¦‚Ä‚È‚­‚Ä‚àA‘—M‚Í‚³‚ê‚Ü‚·B
-		ƒuƒ‰ƒEƒU‚ÌURL“ü—Í—“‚ÉURL‚ğ“ü—Í‚µ‚ÄAEnterƒL[‚ğ‰Ÿ‚µ‚½ê‡‚àget‚Å‚ÌŒÄ‚Ño‚µ‚Å‚·B
-		
-		*/%>	
-		<form id="searchForm" method="post" action="">
-			<h3>ŒŸõğŒ</h3>
-			<p><span>ƒQ[ƒ€ƒ^ƒCƒgƒ‹:</span><input type="text" name="gameTitle" value="<%=conditionBean.getGameTitle()  %>"></p>
-			<p><span>ƒn[ƒhƒEƒFƒA:</span><input type="text" name="hardware" value="<%=conditionBean.getHardware()  %>">
-			<input type="submit" value="V‹K">
-			<input type="submit" value="ŒŸõ" onClick="kakunin()"></p>
-		</form>
-		<p><%=request.getAttribute("message")%></p>
-		
-		<p><%=request.getAttribute("error")%></p>
-		
-		<p><%=request.getAttribute("List<GameBean>.gameList")%></p>
-		<hr>
-		<table class="float-left">
-			<caption>ƒQ[ƒ€ƒ}ƒXƒ^ˆê——</caption>
-			<tr>
-				<th>No</th><th>ƒQ[ƒ€ƒ^ƒCƒgƒ‹</th><th>ƒn[ƒhƒEƒFƒA</th>
-				
-			</tr>
-			<%for(int i = 0 ; i < gameList.size();i++){ %> 
-			<%
-			/*
-			  * ‚±‚±‚ÅgameList‚©‚çAServlet‚Å“ü‚ê‚½GameBean‚ğ‚Ç‚¤‚â‚Á‚Ä’l‚ğ‚Æ‚Á‚Ä‚­‚é‚©‚ªA‰Û‘è1‚ÌRê‚Å‚·B
-			  * gameList‚ÌŒ^‚ÍAList‚Å‚·B
-			  * http://docs.oracle.com/javase/jp/6/api/java/util/List.html
-			  * http://docs.oracle.com/javase/jp/6/api/java/util/ArrayList.html
-			  * ‚±‚Ì•Ó‚ğŒ©‚ÄA‚È‚ñ‚Æ‚©GameBean‚ğæ‚èo‚µ‚Ä‚İ‚Ä‚­‚¾‚³‚¢B
-			  *
-			  */
-			%>
-			
-				<tr>
-					<td>TODO ˜A”Ô‚Å•\¦</td>
-					<td>TODO ‚±‚±‚Éƒ^ƒCƒgƒ‹‚ğ•\¦</td>
-					<td>TODO ‚±‚±‚Éƒn[ƒhƒEƒFƒA‚ğ•\¦</td>
-				</tr>
-			<%} %>
-		</table>
-		<div class="float-left" style="width:500px;margin-top:50px;margin-left:50px">
-			‰Û‘è‚P
-			<ol>
-			<li>html‚Æcss‚ğ‹ìg‚µ‚ÄA‰æ–ÊƒfƒUƒCƒ“‚ğ‚©‚Á‚±‚æ‚­‚µ‚Ü‚·B<br>
-			‚©‚Á‚±‚¢‚¢ƒfƒUƒCƒ“‚ªv‚¢‚Â‚©‚È‚¢l‚ÍAWebƒVƒXƒeƒ€d—l‘‚ğQl‚É‚µ‚Ä‚­‚¾‚³‚¢B</li>
-			<li>n‚ß‚Ì‰æ–Ê•\¦‚ÅAunullv‚Æ‚¢‚¤•¶š‚ª•\¦‚³‚ê‚È‚¢‚æ‚¤‚É‚µ‚Ü‚·B</li>
-			<li>ŒŸõ‚ğŠJn‚·‚é‘O‚ÉAƒNƒ‰ƒCƒAƒ“ƒg‘¤‚ÌJavaScript‚Åˆ—‚ğ‘±s‚·‚é‚©‚Ç‚¤‚©‚ÌŠm”FƒƒbƒZ[ƒW‚ğ•\¦‚µ‚Ü‚·B
-			<br>ƒLƒƒƒ“ƒZƒ‹‚µ‚½ê‡‚ÍŒŸõÀs‚ğæ‚è‚â‚ß‚Ü‚·B</li>
-			<li>DB‚ÌŒ¤C‰Û‘è‚Åì‚Á‚½ƒQ[ƒ€ƒ}ƒXƒ^‚Ìî•ñ‚ğ‰æ–Ê‰º•”‚Ìˆê——‚É•\¦‚µ‚Ü‚·B</li>
-			</ol>
+	/**
+	 * 
+	 * ç”»é¢ã‹ã‚‰submitãƒœã‚¿ãƒ³ã‚’æŠ¼ã™ã¨å‘¼ã³å‡ºã•ã‚Œã‚‹ãƒ¡ã‚½ãƒƒãƒ‰ã§ã™ã€‚
+	 * 
+	 * @param request ç”»é¢ã‹ã‚‰ã®è¦æ±‚å†…å®¹ã‚’å«ã‚€ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§ã™ã€‚
+	 * @param response ç”»é¢ã¸ã®å¿œç­”å†…å®¹ã‚’å«ã‚€ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§ã™ã€‚
+	 * 
+	 * @see javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+	 */
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException,
+			IOException {
 
-			‰Û‘è‚Q
-			<ol>
-			<li>ŒŸõğŒ‚É“ü—Í‚µ‚½“à—e‚ÅASQL‚ÌŒŸõğŒ‚ğ‘‚â‚µ‚ÄAŒŸõŒ‹‰Ê‚É”½‰f‚³‚¹‚Ü‚·B</li>
-			<li>ŒŸõ‚ğŠJn‚·‚é‘O‚ÉJavaScript‚Å“ü—Í‚ğƒ`ƒFƒbƒN‚µ‚Ü‚·B<br>
-				<ul>
-					<li>ƒQ[ƒ€ƒ^ƒCƒgƒ‹‚É’l‚ª“ü—Í‚³‚ê‚Ä‚¢‚È‚¢ê‡‚ÉƒGƒ‰[ƒƒbƒZ[ƒW•\¦</li>
-					<li>ƒn[ƒhƒEƒFƒA‚É’l‚ª“ü—Í‚³‚ê‚Ä‚¢‚È‚¢ê‡‚ÉƒGƒ‰[ƒƒbƒZ[ƒW•\¦</li>
-				</ul>
-			</li>
-			</ol>
+		// æ–‡å­—åŒ–ã‘å¯¾ç­–ã®ãŠç´„æŸã§ã™ã€‚
+		request.setCharacterEncoding("UTF-8");
 
-			‰Û‘è‚R
-			<ol>
-			<li>ƒQ[ƒ€ƒ}ƒXƒ^ˆê——‚ÌŒŸõŒ‹‰ÊŒ”‚ğ‰æ–Ê‚É•\¦‚µ‚Ü‚·B<br>
-			‚½‚¾‚µAŒ”‚ÍAselect count(*) from ...‚ğg‚Á‚ÄDB‚©‚çæ“¾‚µ‚Ä‚­‚¾‚³‚¢B
-			</li>
-			<li>ƒQ[ƒ€ƒ}ƒXƒ^ˆê——‚ÉAƒLƒƒƒ‰ƒNƒ^”‚ğ•\¦‚·‚é—ñ‚ğ‚ğ’Ç‰Á‚µ‚Ä‚­‚¾‚³‚¢B</li>
-			</ol>
+		// æ¤œç´¢æ¡ä»¶ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ç”Ÿæˆã—ã¦,ç”»é¢ã‹ã‚‰å…¥åŠ›ã—ãŸæ¤œç´¢æ¡ä»¶ã®æƒ…å ±ã‚’ã‚»ãƒƒãƒˆã—ã¾ã™ã€‚
+		GameSearchConditionBean conditionBean = new GameSearchConditionBean();
+		{
+			String hardware = request.getParameter("hardware");
+			String gameTitle = request.getParameter("gameTitle");
+			if (hardware == null) {
+				hardware = "";
+			}
+			if (gameTitle == null) {
+				gameTitle = "";
+			}
 
-			‰Û‘è‚S
-			<ol>
-			<li>ŠeƒQ[ƒ€ƒ}ƒXƒ^ˆê——‚ÌÅI—ñ‚ÉAíœƒ{ƒ^ƒ“‚ğ’Ç‰Á‚µ‚Ü‚·B<br>
-				íœƒ{ƒ^ƒ“‚ğ‰Ÿ‚·‚ÆAƒQ[ƒ€ƒ}ƒXƒ^‚ÌŠY“–ƒŒƒR[ƒh‚ğíœ‚µ‚Ü‚·B
-				<ul>
-					<li>html‚ğ•ÒW‚µAíœƒ{ƒ^ƒ“‚ğ’Ç‰Á</li>
-					<li>GameDeleteServlet‚Ì’Ç‰Á<li>
-					<li>web.xml‚Éservlet‚ğ“o˜^</li>
-					<li>íœƒ{ƒ^ƒ“‚ğƒNƒŠƒbƒN‚·‚é‚ÆAGameDeleteServlet‚ÉƒŠƒNƒGƒXƒg‚ğ‘—M‚·‚éB</li>
-					<li>GameDeleteServlet‚ÅDB‚ÌƒŒƒR[ƒhˆ—‚ğÀ‘•</li>
-					<li>ˆê——‰æ–Ê‚ğÄ•\¦‚µAƒƒbƒZ[ƒWu{ƒQ[ƒ€ƒ^ƒCƒgƒ‹}‚ğíœ‚µ‚Ü‚µ‚½Bv‚ğ•\¦‚µ‚Ü‚·B<br>
-					i{ƒQ[ƒ€ƒ^ƒCƒgƒ‹}‚Ííœ‚µ‚½ƒQ[ƒ€ƒ^ƒCƒgƒ‹–¼j
-				</ul>
-			</li>
-			</ol>
-			
-			‰Û‘è‚T
-			<ol>
-			<li>Še©‚Å©—R‚ÉƒAƒŒƒ“ƒW‚ğ‰Á‚¦‚Ä‚İ‚Ü‚µ‚å‚¤B</li>
-			<li>WebƒVƒXƒeƒ€d—l‘‚ğQl‚ÉAV‹K“o˜^E•ÒW‰æ–Ê‚É‚à’§í‚µ‚Ä‚İ‚Ü‚µ‚å‚¤B</li>
-			</ol>
-			
-			
-		</div>
-	</body>
-</html>
+			conditionBean.setGameTitle(gameTitle);
+			conditionBean.setHardware(hardware);
+		}
+
+		// æ¤œç´¢æ¡ä»¶ã‚’ç”»é¢ã«å†ç¾ã•ã›ã‚‹ãŸã‚ã€ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¸ã®å¿œç­”å†…å®¹ã«æ¤œç´¢æ¡ä»¶ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ã‚»ãƒƒãƒˆã—ã¾ã™ã€‚
+		// jspã§ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã®ç”»é¢ã‚’çµ„ã¿ç«‹ã¦ã‚‹éš›ã«ã€requestã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‹ã‚‰æ¤œç´¢æ¡ä»¶ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’å‚ç…§ã—ã¾ã™ã€‚
+		request.setAttribute("conditionBean", conditionBean);
+
+		String error = "";
+
+		// TODO ç ”ä¿®èª²é¡Œ selectGameListã§ã€ç”»é¢ã§å…¥åŠ›ã—ãŸæ¤œç´¢æ¡ä»¶ã«å¿œã˜ãŸã‚²ãƒ¼ãƒ ã‚’è¿”ã™å‡¦ç†ã‚’å®Ÿè£…ã—ã¦ãã ã•ã„ã€‚
+		{
+			try {
+
+				// æ¤œç´¢å®Ÿè¡Œ
+				List<GameBean> gameList = selectGameList(conditionBean);
+	
+
+				// æ¤œç´¢çµæœã‚’ã€jspã§å‚ç…§ã§ãã‚‹ã‚ˆã†ã«Requestã«ã‚»ãƒƒãƒˆã—ã¾ã™ã€‚
+				request.setAttribute("gameList", gameList);
+		
+
+			} catch (ClassNotFoundException e) {
+				error = "Oracleã®JDBCãƒ‰ãƒ©ã‚¤ãƒãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚" + e.getMessage();
+				e.printStackTrace();
+			} catch (SQLException e) {
+				error = "SQLãŒé–“é•ã£ã¦ã„ã‚‹ã‹ã€DBã«æ¥ç¶šã§ãã¾ã›ã‚“ã€‚" + e.getMessage();
+				e.printStackTrace();
+			}
+
+			// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã‹ã‚‰è¦æ±‚å›æ•°ã‚’ç”»é¢ã«è¡¨ç¤ºã—ã¾ã™ã€‚
+			count++;
+			String message = count + "å›ç›®ã®ã“ã‚“ã«ã¡ã¯";
+			request.setAttribute("message", message);
+
+			// ã‚¨ãƒ©ãƒ¼ãŒã‚ã£ãŸå ´åˆã€ä¸Šè¨˜ã®catchç¯€ã§errorå¤‰æ•°ã«ã‚¨ãƒ©ãƒ¼ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’æ ¼ç´ã—ã¦ã„ã¾ã™ã€‚
+			// ã“ã‚Œã‚‚JSPã§å‚ç…§ã§ãã‚‹ã‚ˆã†ã«Requestã«ã‚»ãƒƒãƒˆã—ã¦ãŠãã¾ã™ã€‚
+			request.setAttribute("error", error);
+
+		}
+
+		// gamelist.jspã‚’è¡¨ç¤ºã—ã¾ã™ã€‚
+		getServletConfig().getServletContext().getRequestDispatcher("/WEB-INF/jsp/gemelist.jsp")
+				.forward(request, response);
+
+	}
+
+	/**
+	 * TODO ç ”ä¿®èª²é¡Œ ã“ã®ãƒ¡ã‚½ãƒƒãƒ‰ã‚’å®Ÿè£…ã—ã¾ã™ã€‚
+	 * 
+	 * ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã¨ã—ã¦æ¸¡ã—ãŸæ¤œç´¢æ¡ä»¶ã«åˆè‡´ã™ã‚‹ã‚²ãƒ¼ãƒ ã‚’æ¤œç´¢ã—ã¦ã€çµæœã‚’Listã«å…¥ã‚Œã¦è¿”ã—ã¾ã™ã€‚
+	 * 
+	 * 
+	 * @param conditionBean æ¤œç´¢æ¡ä»¶
+	 * @return 0ä»¶ä»¥ä¸Šã®Gameã‚’Listã«å…¥ã‚Œã¦è¿”ã—ã¾ã™ã€‚
+	 * @throws ClassNotFoundException JDBCãƒ‰ãƒ©ã‚¤ãƒã‚¯ãƒ©ã‚¹ãŒè¦‹ã¤ã‹ã‚‰ãªã„å ´åˆã«throwã—ã¾ã™ã€‚
+	 * @throws SQLException SQLãŒä¸æ­£ã‹ã€DBã«æ¥ç¶šã§ããªã„å ´åˆã«throwã—ã¾ã™ã€‚
+	 * @throws IOException ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã‚ãªã„å ´åˆã«throwã—ã¾ã™ã€‚ 
+	 * @throws FileNotFoundException ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ãƒ•ã‚¡ã‚¤ãƒ«ãŒå­˜åœ¨ã—ãªã„å ´åˆã«throwã—ã¾ã™ã€‚ 
+	 */
+	private List<GameBean> selectGameList(GameSearchConditionBean conditionBean) throws SQLException,
+			ClassNotFoundException, FileNotFoundException, IOException {
+
+		// çµæœã®ã‚²ãƒ¼ãƒ ã‚’æ ¼ç´ã™ã‚‹ãŸã‚ã®Listã®ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ã‚’æ–°ã—ãç”Ÿæˆã—ã¾ã™ã€‚
+		// Listã¨ã¯ã€é…åˆ—ã‚’ã‚ˆã‚Šä½¿ã„ã‚„ã™ãã—ãŸã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§ã™ã€‚
+		List<GameBean> gameList = new ArrayList<GameBean>();
+		{
+			// SQLã‚’çµ„ã¿ãŸã¦ã‚‹ãƒ¡ã‚½ãƒƒãƒ‰ã‚’å‘¼ã³å‡ºã—ã¾ã™ã€‚
+			String sql = getSqlOfSelectGameList(conditionBean);
+
+			// DBã¸æ¥ç¶šã™ã‚‹ãƒ¡ã‚½ãƒƒãƒ‰ã‚’å‘¼ã³å‡ºã—ã¾ã™ã€‚
+			try (Connection connection = getConnection()) {
+
+				// Statementã¯SQLã‚’å®Ÿè¡Œã™ã‚‹ãŸã‚ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§ã™ã€‚
+				Statement statement = connection.createStatement();
+
+				// SQLã®å®Ÿè¡Œçµæœã¯ã€ResultSetã«å…¥ã£ã¦ãã¾ã™ã€‚
+				try (ResultSet result = statement.executeQuery(sql)) {
+
+					// æ¤œç´¢ã—ãŸãƒ¬ã‚³ãƒ¼ãƒ‰ã®æ•°ã ã‘ç¹°ã‚Šè¿”ã—ã¾ã™ã€‚
+					while (result.next()) {
+						//TODO ç ”ä¿®èª²é¡Œ ã“ã“ã§ã€æ¤œç´¢çµæœã‚’Javaã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«å¤‰æ›ã™ã‚‹å‡¦ç†ã‚’è¨˜è¿°ã—ã¾ã™ã€‚
+						GameBean gameBean = new GameBean();
+						gameBean.setGameId(result.getString("game_id"));
+						gameBean.setGameTitle(result.getString("game_title"));
+						gameBean.setHardWare(result.getString("hardware_name"));
+						gameList.add(gameBean);
+
+					}
+
+				}
+			}
+		}
+
+		// ä¸Šè¨˜å‡¦ç†ã§çµ„ã¿ç«‹ã¦ãŸListã‚’è¿”ã‚Šå€¤ã¨ã—ã¦æˆ»ã—ã¾ã™ã€‚
+		return gameList;
+
+	}
+
+
+	/**
+	 * propertiesãƒ•ã‚¡ã‚¤ãƒ«ã«å®šç¾©ã—ãŸæ¥ç¶šå…ˆæƒ…å ±ã‚’èª­ã¿è¾¼ã¿ã¾ã™ã€‚
+	 * 
+	 * @return
+	 * @throws ClassNotFoundException JDBCãƒ‰ãƒ©ã‚¤ãƒã‚¯ãƒ©ã‚¹ãŒè¦‹ã¤ã‹ã‚‰ãªã„å ´åˆã«throwã—ã¾ã™ã€‚
+	 * @throws SQLException SQLãŒä¸æ­£ã‹ã€DBã«æ¥ç¶šã§ããªã„å ´åˆã«throwã—ã¾ã™ã€‚
+	 * @throws IOException ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã‚ãªã„å ´åˆã«throwã—ã¾ã™ã€‚ 
+	 * @throws FileNotFoundException ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ãƒ•ã‚¡ã‚¤ãƒ«ãŒå­˜åœ¨ã—ãªã„å ´åˆã«throwã—ã¾ã™ã€‚ 
+	 */
+	private Connection getConnection() throws ClassNotFoundException, SQLException, FileNotFoundException, IOException {
+
+		// propertiesãƒ•ã‚¡ã‚¤ãƒ«èª­ã¿è¾¼ã¿
+		DBConnectInfo info = new DBConnectInfo();
+
+		Class.forName(info.getDriver());
+		Connection connection = DriverManager.getConnection(info.getUrl(), info.getUser(), info.getPassword());
+
+		return connection;
+	}
+
+	/**
+	 * 
+	 * æ¤œç´¢æ¡ä»¶ã«å¿œã˜ã¦å¤‰ã‚ã‚‹ã‚²ãƒ¼ãƒ æ¤œç´¢ç”¨SELECTã®SQLã‚’æ–‡å­—åˆ—ã§è¿”ã—ã¾ã™ã€‚</p>
+	 * 
+	 * <æ³¨æ„>
+	 * ã“ã“ã§ã¯æ¤œç´¢æ¡ä»¶ã‚’ç›´æ¥æ–‡å­—åˆ—ã«çµ„ã¿è¾¼ã‚“ã§SQLã‚’ä½œæˆã—ã¾ã™ã€‚</p>
+	 * 
+	 * æ¤œç´¢æ¡ä»¶éƒ¨åˆ†ã®ã‚ˆã†ã«ã€ç”»é¢ã‹ã‚‰ã®å…¥åŠ›ç­‰ã§å‹•çš„ã«å¤‰ã‚ã‚‹éƒ¨åˆ†ã¯ã€
+	 * SQLã®æ–‡å­—åˆ—ã¨ã¯åˆ¥ã«ã—ã¦ã€å¾Œã‹ã‚‰è¨­å®šã§ãã‚‹ã‚ˆã†ã«ã™ã‚‹ã®ãŒ
+	 * ã‚»ã‚­ãƒ¥ãƒªãƒ†ã‚£ã‚„ãƒ‘ãƒ•ã‚©ãƒ¼ãƒãƒ³ã‚¹é¢ã§è¡Œå„€ã®è‰¯ã„ãƒ—ãƒ­ã‚°ãƒ©ãƒ ã¨ã•ã‚Œã¦ã„ã¾ã™ã€‚
+	 * (ãƒã‚¤ãƒ³ãƒ‰ãƒ¡ã‚«ãƒ‹ã‚ºãƒ ã¨è¨€ã„ã¾ã™ï¼‰
+	 * ã“ã®ç ”ä¿®ã¯ãã“ã¾ã§æ„è­˜ã™ã‚‹å¿…è¦ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚</p>
+	 * 
+	 * ã“ã®æ–‡ç« ã®æ„å‘³ãŒã‚ã‹ã‚‰ãªãã¦ã‚‚ã€ä»Šã®æ™‚ç‚¹ã§ã¯æ°—ã«ã™ã‚‹å¿…è¦ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚
+	 * 
+	 * @param conditionBean ç”»é¢ã§å…¥åŠ›ã—ãŸæ¤œç´¢æ¡ä»¶ã‚’æ ¼ç´ã—ãŸBean
+	 * @return æ¤œç´¢ç”¨SQLã‚’æ ¼ç´ã—ãŸæ–‡å­—åˆ—
+	 */
+	private String getSqlOfSelectGameList(GameSearchConditionBean conditionBean) {
+
+		//TODO ç ”ä¿®èª²é¡Œ æ¤œç´¢æ¡ä»¶ã«å¿œã˜ãŸæ¤œç´¢ã‚’ã™ã‚‹ãŸã‚ã®SQLæ–‡å­—åˆ—ã‚’è¿”ã™å‡¦ç†ã‚’è¨˜è¿°ã—ã¦ãã ã•ã„ã€‚
+
+		StringBuilder sql = new StringBuilder();
+		{
+			sql.append("/*TODO ç ”ä¿®èª²é¡Œ ã“ã®SQLã‚’ç·¨é›†ã—ã¦ã€ã‚²ãƒ¼ãƒ ãƒªã‚¹ãƒˆã‚’å–å¾—ã™ã‚‹SQLã«å¤‰æ›´ã—ã¦ãã ã•ã„ã€‚*/" + "\n");
+			sql.append("select	" + "\n");
+			sql.append("  g.game_id," + "\n");
+			sql.append("  g.game_title," + "\n");
+			sql.append("  h.hardware_name" + "\n");
+			sql.append("from	" + "\n");
+			sql.append("  m_game g," + "\n");
+			sql.append("  m_hardware h	" + "\n");
+			sql.append("where g.hardware_id = h.hardware_id" + "\n");
+			sql.append("order by g.game_id asc" + "\n");
+		}
+
+		System.out.println(sql.toString());
+
+		return sql.toString();
+
+	}
+}
